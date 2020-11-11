@@ -41,7 +41,20 @@
             maxZoom: 18,
             cellSize: 6,
             exp: 3,
-            max: 100
+            max: 100,
+            gradient: {
+                0.0: 'yellow',
+                0.1: '#ff8500',
+                0.2: '#ff6700',
+                0.3: '#ff4200',
+                0.4: '#ff2800',
+                0.5: 'red',
+                0.6: '#c70038',
+                0.7: '#9e0061',
+                0.8: '#6b0094',
+                0.9: '#4200bd',
+                1.0: 'blue'
+            }
         }).addTo(map);
 
         let perimeter, perimeterLayer;
