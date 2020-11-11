@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IDW demo</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <style>
+        body {
+            padding: 0;
+            margin: 0;
+        }
+
+        html,
+        body,
+        #map {
+            height: 100%;
+            width: 100%;
+        }
+    </style>
+</head>
+
+<script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"> </script>
+<script src="../js/leaflet-idw.js"></script>
+<script src="./data/exampledata.js"></script>
+
+<body>
+    <div id="map"></div>
+
+    <script>
+
+        let map = L.map('map').setView([-32.8345, -68.6025], 15);
+
+        let tiles = L.tileLayer('https://{s}.tile.osm.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors',
+        }).addTo(map);
+
+        let idw = L.idwLayer(addressPoints, {
+            opacity: 0.3,
+            maxZoom: 18,
+            cellSize: 6,
+            exp: 3,
+            max: 100
+        }).addTo(map);
+
+        let perimeter, perimeterLayer;
+
+        fetch('./data/perimeter.geojson')
+            .then(function (response) {
+                return response.text();
+            })
+            .then(function (data) {
+                perimeter = JSON.parse(data);
+                addTo(perimeter);
+            })
+            .catch(function (err) {
+                console.error(err);
+            });
+
+        function addTo(perimeter) {
+            let style = {
+                "color": "#ff7800",
+                "weight": 5,
+                "opacity": 0.65,
+                "fillOpacity": 0
+            };
+
+            perimeterLayer = new L.GeoJSON(perimeter, style).addTo(map);
+
+        }
+
+    </script>
+</body>
+
+</html>
