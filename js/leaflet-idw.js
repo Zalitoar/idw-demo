@@ -101,13 +101,16 @@
             return this;
         },
 
-        draw: function (opacity) {
+        draw: function (opacity, b) {
             if (!this._cell) this.cellSize(this.defaultCellSize);
             if (!this._grad) this.gradient(this.defaultGradient);
             
             var ctx = this._ctx;
 
             ctx.clearRect(0, 0, this._width, this._height);
+            
+            ctx.rect(b.x, b.y, b.width, b.height);
+            ctx.clip();
 
             // draw a grayscale idwmap by putting a cell at each data point
             for (var i = 0, len = this._data.length, p; i < len; i++) {
@@ -120,7 +123,7 @@
             var colored = ctx.getImageData(0, 0, this._width, this._height);
             this._colorize(colored.data, this._grad, opacity);
             
-            ctx.putImageData(colored, 0, 0);
+            ctx.putImageData(colored, 0, 0, b.x, b.y, b.width, b.height);
 
             return this;
         },
@@ -330,7 +333,7 @@ L.IdwLayer = (L.Layer ? L.Layer : L.Class).extend({
         }
         console.timeEnd('process');
         console.time('draw ' + data.length);
-        this._idw.data(data).draw(this.options.opacity);
+        this._idw.data(data).draw(this.options.opacity, this.options.b);
         console.timeEnd('draw ' + data.length);
 
         this._frame = null;
