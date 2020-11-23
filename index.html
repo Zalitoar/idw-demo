@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>IDW demo</title>
+    <link rel="icon" href="data:;base64,iVBORw0KGgo=">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
     <style>
         body {
@@ -18,6 +19,19 @@
             height: 100%;
             width: 100%;
         }
+
+        .tooltipStyle {
+            background-color: black;
+            color: white;
+        }
+
+        #menu {
+            position: absolute;
+            display: inline;
+            z-index: 999;
+            right: 10px;
+            top: 10px;
+        }
     </style>
 </head>
 
@@ -26,9 +40,16 @@
 <script src="./data/exampledata.js"></script>
 
 <body>
+    <div id="menu">
+        <button id="puntos" onclick="switchPuntos()">Puntos</button>
+        <button id="descargar" onclick="descargar()">Descargar interpolación</button>
+    </div>
     <div id="map"></div>
 
     <script>
+
+        let svg, perimeter, perimeterLayer, rectBBox;
+        //rectBBox = { x: 150, y: 150, width: 100, height: 100 },
 
         let map = L.map('map').setView([-32.8345, -68.6025], 15);
 
@@ -36,29 +57,27 @@
             attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors',
         }).addTo(map);
 
-        let idw = L.idwLayer(addressPoints, {
-            opacity: 0.3,
-            maxZoom: 18,
-            cellSize: 6,
-            exp: 3,
-            max: 100,
-            gradient: {
-                0.0: 'yellow',
-                0.1: '#ff8500',
-                0.2: '#ff6700',
-                0.3: '#ff4200',
-                0.4: '#ff2800',
-                0.5: 'red',
-                0.6: '#c70038',
-                0.7: '#9e0061',
-                0.8: '#6b0094',
-                0.9: '#4200bd',
-                1.0: 'blue'
+        function getImg(f, q) {
+            if (typeof q != 'number' || q > 1.0) {
+                q = 1.0;
             }
-        }).addTo(map);
+            switch (f) {
+                case 'jpeg':
+                    formatFile = 'image/jpeg';
+                    break;
+                case 'png':
+                    formatFile = 'image/png';
+                    break
+                default:
+                    break;
+            }
 
-        let perimeter, perimeterLayer;
+            dataURL = canvas.toDataURL(formatFile, q);
+            console.log(dataURL);
 
+        }
+
+        // lee el geojson del perímetro
         fetch('./data/perimeter.geojson')
             .then(function (response) {
                 return response.text();
@@ -71,6 +90,7 @@
                 console.error(err);
             });
 
+        // aggrega el perímetro al mapa
         function addTo(perimeter) {
             let style = {
                 "color": "#ff7800",
@@ -80,9 +100,84 @@
             };
 
             perimeterLayer = new L.GeoJSON(perimeter, style).addTo(map);
-
+            addIdw();
         }
 
+        // agrega marcadores con tooltip
+        let arrm = [];
+        addressPoints.forEach(p => {
+            let m = L.circle([p[0], p[1]])
+                .bindTooltip(p[2].toString(), {
+                    'opacity': 0.7,
+                    'className': 'tooltipStyle'
+                });
+            arrm.push(m);
+        });
+        let puntos = L.layerGroup(arrm);
+
+        function switchPuntos() {
+            if (map.hasLayer(puntos)) {
+                puntos.remove();
+            } else {
+                puntos.addTo(map);
+            }
+        }
+
+        // agrega capa idw
+        function addIdw() {
+            svg = document.querySelector('svg');
+            rectBBox = svg.getBBox();
+            //rectBBox = { x: 150, y: 150, width: 100, height: 100 }
+            // crea capa de interpolación
+            let idw = L.idwLayer(addressPoints, {
+                opacity: 0.3,
+                maxZoom: 18,
+                cellSize: 5,
+                exp: 3,
+                max: 100,
+                b: rectBBox,
+                gradient: {
+                    0.0: 'yellow',
+                    0.1: '#ff8500',
+                    0.2: '#ff6700',
+                    0.3: '#ff4200',
+                    0.4: '#ff2800',
+                    0.5: 'red',
+                    0.6: '#c70038',
+                    0.7: '#9e0061',
+                    0.8: '#6b0094',
+                    0.9: '#4200bd',
+                    1.0: 'blue'
+                }
+            }).addTo(map);
+
+            const canvas = document.querySelector('canvas');
+            const ctx = canvas.getContext('2d');
+            let dataURL, formatFile;
+        }
+
+        function descargar() {
+            let fileName = 'idw.png',
+                e = document.createEvent('MouseEvents'),
+                a = document.createElement('a');
+                /* fileToSave = new Blob([JSON.stringify(d)], {
+                    type: 'application/json',
+                    name: fileName
+                }); */
+
+            let image = document.querySelector('canvas').toDataURL("image/png")
+                .replace("image/png", "image/octet-stream");
+            a.setAttribute("href", image);
+
+            a.download = fileName;
+            //a.href = window.URL.createObjectURL(fileToSave);
+            a.dataset.downloadurl = ['text/json', a.download, a.href].join(':');
+            e.initMouseEvent('click', true, false, window, 0, 0, 0, 0, 0, false, false, false, false, 0, null);
+            a.dispatchEvent(e);
+        }
+        /* map.on('moveend', () => { clip() });
+        map.on('zoomend', () => { clip() });
+        */
     </script>
 </body>
 
